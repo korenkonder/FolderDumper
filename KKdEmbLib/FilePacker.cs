@@ -317,8 +317,7 @@ namespace KKdEmbLib
             string[] pre_files = new string[fpd.FilesCount];
 
             dm = (DataMode)(fpd.RootDir.Attributes >> 28);
-            string p = File.Exists(path2) ? Path.GetFileNameWithoutExtension(path2) : Path.GetFileName(path2);
-            p = Directory.GetCurrentDirectory() + "\\" + p;
+            string p = Directory.GetCurrentDirectory() + "\\" + Path.GetFileNameWithoutExtension(path2);
             if (dm == DataMode.Store)
                 Directory.CreateDirectory(p);
 
