@@ -298,10 +298,10 @@ namespace KKdEmbLib
                         c3 = m[q] ^ m[e] ^ m[f] ^ m[g] ^ m[h];
                         h = g; g = f; f = e; e = q; e ^= f ^= g ^= h ^= q = XorU32(c3) % kl;
 
-                        b = *s; d0 = b ^ c0; *d = d0; s++; d++;
-                        b = *s; d1 = b ^ c1; *d = d1; s++; d++;
-                        b = *s; d2 = b ^ c2; *d = d2; s++; d++;
-                        b = *s; d3 = b ^ c3; *d = d3; s++; d++;
+                        *d++ = *s++ ^ c0;
+                        *d++ = *s++ ^ c1;
+                        *d++ = *s++ ^ c2;
+                        *d++ = *s++ ^ c3;
                     }
                 else if (mode == KeyMode.OFB)
                     for (i = 0; i < n; i++)
@@ -315,10 +315,10 @@ namespace KKdEmbLib
                         c3 = d3 ^ m[q] ^ m[e] ^ m[f] ^ m[g] ^ m[h];
                         h = g; g = f; f = e; e = q; e ^= f ^= g ^= h ^= q = XorU32(c3) % kl;
 
-                        b = *s; d0 = b ^ c0; *d = d0; s++; d++;
-                        b = *s; d1 = b ^ c1; *d = d1; s++; d++;
-                        b = *s; d2 = b ^ c2; *d = d2; s++; d++;
-                        b = *s; d3 = b ^ c3; *d = d3; s++; d++;
+                        *d++ = d0 = *s++ ^ c0;
+                        *d++ = d1 = *s++ ^ c1;
+                        *d++ = d2 = *s++ ^ c2;
+                        *d++ = d3 = *s++ ^ c3;
                     }
             }
 
@@ -387,10 +387,10 @@ namespace KKdEmbLib
                         c3 = m[q] ^ m[e] ^ m[f] ^ m[g] ^ m[h];
                         h = g; g = f; f = e; e = q; e ^= f ^= g ^= h ^= q = XorU32(c3) % kl;
 
-                        b = *s; d0 = b ^ c0; *d = d0; s++; d++;
-                        b = *s; d1 = b ^ c1; *d = d1; s++; d++;
-                        b = *s; d2 = b ^ c2; *d = d2; s++; d++;
-                        b = *s; d3 = b ^ c3; *d = d3; s++; d++;
+                        *d++ = *s++ ^ c0;
+                        *d++ = *s++ ^ c1;
+                        *d++ = *s++ ^ c2;
+                        *d++ = *s++ ^ c3;
                     }
                 else if (mode == KeyMode.OFB)
                     for (i = 0; i < n; i++)
@@ -404,10 +404,10 @@ namespace KKdEmbLib
                         c3 = d3 ^ m[q] ^ m[e] ^ m[f] ^ m[g] ^ m[h];
                         h = g; g = f; f = e; e = q; e ^= f ^= g ^= h ^= q = XorU32(c3) % kl;
 
-                        b = *s; d0 = b ^ c0; *d = d0; d0 = b; s++; d++;
-                        b = *s; d1 = b ^ c1; *d = d1; d1 = b; s++; d++;
-                        b = *s; d2 = b ^ c2; *d = d2; d2 = b; s++; d++;
-                        b = *s; d3 = b ^ c3; *d = d3; d3 = b; s++; d++;
+                        b = *s++; *d++ = b ^ c0; d0 = b;
+                        b = *s++; *d++ = b ^ c1; d1 = b;
+                        b = *s++; *d++ = b ^ c2; d2 = b;
+                        b = *s++; *d++ = b ^ c3; d3 = b;
                     }
             }
 

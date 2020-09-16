@@ -384,9 +384,8 @@ namespace KKdEmbLib
             {
                 ref DirData d = ref fpd.DirsData[i];
                 dm = (DataMode)(d.Attributes >> 28);
-                if (Directory.Exists(pre_dirs[i]))
-                    if (dm == DataMode.Delete || Directory.GetFiles(pre_dirs[i]).Length < 1)
-                        Directory.Delete(pre_dirs[i], true);
+                if (Directory.Exists(pre_dirs[i]) && dm == DataMode.Delete)
+                    Directory.Delete(pre_dirs[i], true);
             }
 
 
