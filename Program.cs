@@ -26,8 +26,8 @@ namespace FolderDumper
             int n = 0;
             string arg;
             string last = "";
-            bool[] has = new bool[11];
-            for (int j = 0; j < 11; j++) has[j] = false;
+            bool[] has = new bool[12];
+            for (int j = 0; j < 12; j++) has[j] = false;
 
             for (int j = 0; j < arl; j++)
             {
@@ -38,6 +38,7 @@ namespace FolderDumper
                 else if (!has[ 7] &&  arg == "-h") has[ 7] = true;
                 else if (!has[ 8] &&  arg == "-v") has[ 8] = true;
                 else if (!has[ 9] &&  arg == "-d") has[ 9] = true;
+                else if (!has[11] &&  arg == "-s") has[11] = true;
                 else if (!has[10] && last == "-n")
                 {
                     if (!int.TryParse(arg, out n)) { last = arg; continue; }
@@ -131,7 +132,7 @@ namespace FolderDumper
                         fp2.Dispose();
                     }
                     if (has[9]) fp.Differentiate(i, key, il, keys);
-                    else        fp.Unpack       (i, key, il, keys);
+                    else        fp.Unpack    (i, o, key, il, keys, has[11]);
                     fp.Dispose();
                 }
                 else if (has[6])
@@ -152,9 +153,10 @@ namespace FolderDumper
                     fp2.Dispose();
 
                     if (key2 == null) return;
-                    fp.Repack(i, key2);
+                    if (has[1]) fp.Repack(i, o, key2);
+                    else        fp.Repack(i,    key2);
                 }
-                else fp.Unpack(i, o);
+                else fp.Unpack(i, o, has[11]);
                 fp.Dispose();
             }
             else Console.WriteLine($"Location \"{i}\" doesn't exist");
@@ -171,6 +173,7 @@ namespace FolderDumper
             Console.WriteLine($"    -okf        Output key file");
             Console.WriteLine($"    -k          Input/Output password");
             Console.WriteLine($"    -kf         Input/Output key file");
+            Console.WriteLine($"    -s          Show Root Folder if it was hidden");
             Console.WriteLine($"    -r          Repack file");
             Console.WriteLine($"    -v          Print version");
             Console.WriteLine($"    -h          Print this help");

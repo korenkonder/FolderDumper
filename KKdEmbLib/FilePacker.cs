@@ -30,38 +30,38 @@ namespace KKdEmbLib
         private const long rootDataLength = 0x10;
 
         private byte[] key;
-        private KKE enc;
+        private KKC curse;
 
         public byte[] Key => key;
 
         public FilePacker(byte[] key)
         {
             _state = 1;
-            enc = default;
+            curse = default;
             this.key = null;
 
-            NewKey(ref enc, key);
+            NewKey(ref curse, key);
         }
 
         public FilePacker(string password)
         {
             _state = 1;
-            enc = default;
+            curse = default;
             key = null;
 
-            NewKey(ref enc, password);
+            NewKey(ref curse, password);
         }
 
-        private void NewKey(ref KKE enc, byte[] key)
+        private void NewKey(ref KKC curse, byte[] key)
         {
             if (key == null || key.Length != 64) return;
 
             this.key = key;
-            enc = new KKE(key, KeyMode.OFB);
-            enc.PrepareEncryptionTable();
+            curse = new KKC(key, KKCKeyMode.Past);
+            curse.PrepareCursingTable();
         }
 
-        private void NewKey(ref KKE enc, string password)
+        private void NewKey(ref KKC curse, string password)
         {
             if (password != null)
                 _state = (uint)(password.Length > 0 ? password.Length : 1);
@@ -85,13 +85,13 @@ namespace KKdEmbLib
             _state = a;
             NextBytes(key);
 
-            enc = new KKE(key, KeyMode.OFB);
-            enc.PrepareEncryptionTable();
+            curse = new KKC(key, KKCKeyMode.Past);
+            curse.PrepareCursingTable();
         }
 
         public void Pack(string path, string file)
         {
-            if (key == null || path == null || file == null || enc.Error != 0) return;
+            if (key == null || path == null || file == null || curse.Error != 0) return;
 
             long i;
             string p = path;
@@ -157,8 +157,8 @@ namespace KKdEmbLib
 
             byte[] h = WriteHeader(ref fpd);
 
-            enc.Reset(fpd.IV0, fpd.IV1, fpd.IV2, fpd.IV3);
-            enc.Encrypt(h, h, 0x10, 0x10);
+            curse.Reset(fpd.IV0, fpd.IV1, fpd.IV2, fpd.IV3);
+            curse.Curse(h, h, 0x10, 0x10);
 
             file = file.EndsWith(".kkfp") ? file : file + ".kkfp";
             Stream s = File.OpenWriter(file, true);
@@ -175,11 +175,11 @@ namespace KKdEmbLib
                     Console.WriteLine($"Packing \"{fd.Name}\"");
                     l = s1.L / dA;
                     
-                    enc.Reset(fd.IV);
+                    curse.Reset(fd.IV);
                     for (j = 0; j < l; j++)
                     {
                         s1.RBy(dA, buf);
-                        enc.Encrypt(buf, buf);
+                        curse.Curse(buf, buf);
                         s.W(buf, dA);
                     }
 
@@ -188,7 +188,7 @@ namespace KKdEmbLib
 
                     NextBytes(buf);
                     s1.RBy(l, buf);
-                    enc.Encrypt(buf, buf);
+                    curse.Curse(buf, buf);
                     s.W(buf, (int)l.A(hA));
                     s.F();
                 }
@@ -216,23 +216,23 @@ namespace KKdEmbLib
             }
         }
 
-        public void Unpack(string path, string path2)
+        public void Unpack(string path, string path2, bool showHidden)
         {
-            if (key == null || path == null || path2 == null || enc.Error != 0) return;
+            if (key == null || path == null || path2 == null || curse.Error != 0) return;
 
-            FilePackerData fpd = ReadHeader(path, ref enc);
+            FilePackerData fpd = ReadHeader(path, ref curse);
             if (fpd.DataOffset < 0x400 || fpd.DataOffset % 0x400 != 0) return;
-            SaveFiles(path, path2, enc, fpd);
+            SaveFiles(path, path2, curse, fpd, showHidden);
         }
 
-        public void Unpack(string path, string password, string[] paths, string[] passwords)
+        public void Unpack(string path, string password, string[] paths, string[] passwords, bool showHidden)
         {
-            if (key == null || path == null || enc.Error != 0 || paths == null
+            if (key == null || path == null || curse.Error != 0 || paths == null
                 || passwords == null || paths.Length < 1 || passwords.Length < 1
                 || paths.Length != passwords.Length || password == null) return;
 
             int c = paths.Length;
-            KKE[] encs = new KKE[c + 1];
+            KKC[] curses = new KKC[c + 1];
             FilePackerData[] fpds = new FilePackerData[c + 1];
 
             Array.Resize(ref paths, c + 1);
@@ -241,21 +241,21 @@ namespace KKdEmbLib
             path = paths[c];
 
             key = null;
-            encs[0] = default;
-            NewKey(ref encs[0], password);
-            if (key == null || encs[0].Error != 0) return;
+            curses[0] = default;
+            NewKey(ref curses[0], password);
+            if (key == null || curses[0].Error != 0) return;
 
-            fpds[0] = ReadHeader(paths[0], ref encs[0]);
+            fpds[0] = ReadHeader(paths[0], ref curses[0]);
             if (fpds[0].DataOffset < 0x400 || fpds[0].DataOffset % 0x400 != 0) return;
 
             for (int i = 0, j = 1; i < c; i++, j++)
             {
                 key = null;
-                encs[j] = default;
-                NewKey(ref encs[j], passwords[i]);
-                if (key == null || encs[j].Error != 0) return;
+                curses[j] = default;
+                NewKey(ref curses[j], passwords[i]);
+                if (key == null || curses[j].Error != 0) return;
 
-                fpds[j] = ReadHeader(paths[j], ref encs[j]);
+                fpds[j] = ReadHeader(paths[j], ref curses[j]);
                 if (fpds[j].DataOffset < 0x400 || fpds[j].DataOffset % 0x400 != 0) return;
                 else if (!(fpds[j].ParentHash0 == 0 && fpds[j].ParentHash1 == 0 && fpds[j].ParentHash2 == 0)
                     && (fpds[j].ParentHash0 != fpds[i].Hash0 || fpds[j].ParentHash1 != fpds[i].Hash1
@@ -263,39 +263,38 @@ namespace KKdEmbLib
             }
 
             for (int j = c; j >= 0; j--)
-                SaveFiles(path, paths[j], encs[j], fpds[j]);
+                SaveFiles(path, paths[j], curses[j], fpds[j], showHidden);
         }
 
-        public void Unpack(string path, byte[] key, string[] paths, byte[][] keys)
+        public void Unpack(string path, string path2, byte[] key, string[] paths, byte[][] keys, bool showHidden)
         {
-            if (this.key == null || path == null || enc.Error != 0 || paths == null || keys == null
+            if (this.key == null || path == null || path2 == null || curse.Error != 0 || paths == null || keys == null
                 || paths.Length < 1 || keys.Length < 1 || paths.Length != keys.Length || key == null) return;
 
             int c = paths.Length;
-            KKE[] encs = new KKE[c + 1];
+            KKC[] curses = new KKC[c + 1];
             FilePackerData[] fpds = new FilePackerData[c + 1];
 
             Array.Resize(ref paths, c + 1);
             Array.Copy(paths, 0, paths, 1, c);
             paths[0] = path;
-            path = paths[c];
 
             this.key = null;
-            encs[0] = default;
-            NewKey(ref encs[0], key);
-            if (this.key == null || encs[0].Error != 0) return;
+            curses[0] = default;
+            NewKey(ref curses[0], key);
+            if (this.key == null || curses[0].Error != 0) return;
 
-            fpds[0] = ReadHeader(paths[0], ref encs[0]);
+            fpds[0] = ReadHeader(paths[0], ref curses[0]);
             if (fpds[0].DataOffset < 0x400 || fpds[0].DataOffset % 0x400 != 0) return;
 
             for (int i = 0, j = 1; i < c; i++, j++)
             {
                 this.key = null;
-                encs[j] = default;
-                NewKey(ref encs[j], keys[i]);
-                if (this.key == null || encs[j].Error != 0) return;
+                curses[j] = default;
+                NewKey(ref curses[j], keys[i]);
+                if (this.key == null || curses[j].Error != 0) return;
 
-                fpds[j] = ReadHeader(paths[j], ref encs[j]);
+                fpds[j] = ReadHeader(paths[j], ref curses[j]);
                 if (fpds[j].DataOffset < 0x400 || fpds[j].DataOffset % 0x400 != 0) return;
                 else if (!(fpds[i].ParentHash0 == 0 && fpds[i].ParentHash1 == 0 && fpds[i].ParentHash2 == 0)
                     && (fpds[j].Hash0 != fpds[i].ParentHash0 || fpds[j].Hash1 != fpds[i].ParentHash1
@@ -303,10 +302,10 @@ namespace KKdEmbLib
             }
 
             for (int j = c; j >= 0; j--)
-                SaveFiles(paths[j], path, encs[j], fpds[j]);
+                SaveFiles(paths[j], path2, curses[j], fpds[j], showHidden);
         }
 
-        private void SaveFiles(string path, string path2, KKE enc, FilePackerData fpd)
+        private void SaveFiles(string path, string path2, KKC curse, FilePackerData fpd, bool showHidden)
         {
             DataMode dm;
             long i;
@@ -317,7 +316,11 @@ namespace KKdEmbLib
             string[] pre_files = new string[fpd.FilesCount];
 
             dm = (DataMode)(fpd.RootDir.Attributes >> 28);
-            string p = Directory.GetCurrentDirectory() + "\\" + Path.GetFileNameWithoutExtension(path2);
+            string p;
+            if (Path.GetFileNameWithoutExtension(path2) != Path.GetFileName(path2))
+                p = Directory.GetCurrentDirectory() + "\\" + Path.GetFileNameWithoutExtension(path2);
+            else
+                p = path2;
             if (dm == DataMode.Store)
                 Directory.CreateDirectory(p);
 
@@ -350,11 +353,11 @@ namespace KKdEmbLib
                         s.PI64 = fd.DataOffset;
                         l = fd.DataLength / dA;
 
-                        enc.Reset(fd.IV);
+                        curse.Reset(fd.IV);
                         for (j = 0; j < l; j++)
                         {
                             s.RBy(dA, buf);
-                            enc.Decrypt(buf, buf);
+                            curse.Decurse(buf, buf);
                             s1.W(buf, dA);
                         }
 
@@ -362,7 +365,7 @@ namespace KKdEmbLib
                         if (l == 0) continue;
 
                         s.RBy(l.A(hA), buf);
-                        enc.Decrypt(buf, buf);
+                        curse.Decurse(buf, buf);
                         s1.W(buf, (int)l);
                     }
 
@@ -410,7 +413,7 @@ namespace KKdEmbLib
             DirData r = fpd.RootDir;
             new System.IO.DirectoryInfo(p)
             {
-                Attributes = (System.IO.FileAttributes)(r.Attributes & 0xFFFFFFF),
+                Attributes = (System.IO.FileAttributes)(r.Attributes & (showHidden ? 0xFFFFFFD : 0xFFFFFFF)),
                   CreationTimeUtc = new DateTime(r.LastWriteTime),
                  LastWriteTimeUtc = new DateTime(r.LastWriteTime),
                 LastAccessTimeUtc = new DateTime(r.LastWriteTime),
@@ -419,12 +422,12 @@ namespace KKdEmbLib
 
         public void Differentiate(string path, string password, string[] paths, string[] passwords)
         {
-            if (key == null || path == null || enc.Error != 0 || paths == null
+            if (key == null || path == null || curse.Error != 0 || paths == null
                 || passwords == null || paths.Length < 1 || passwords.Length < 1
                 || paths.Length != passwords.Length || password == null) return;
 
             int c = paths.Length;
-            KKE[] encs = new KKE[c + 1];
+            KKC[] curses = new KKC[c + 1];
             FilePackerData[] fpds = new FilePackerData[c + 1];
 
             Array.Resize(ref paths, c + 1);
@@ -432,36 +435,36 @@ namespace KKdEmbLib
             paths[0] = path;
 
             key = null;
-            encs[0] = default;
-            NewKey(ref encs[0], password);
-            if (key == null || encs[0].Error != 0) return;
+            curses[0] = default;
+            NewKey(ref curses[0], password);
+            if (key == null || curses[0].Error != 0) return;
 
-            fpds[0] = ReadHeader(path, ref encs[0]);
+            fpds[0] = ReadHeader(path, ref curses[0]);
             if (fpds[0].DataOffset < 0x400 || fpds[0].DataOffset % 0x400 != 0) return;
 
             for (int i = 0, j = 1; i < c; i++, j++)
             {
                 key = null;
-                encs[j] = default;
-                NewKey(ref encs[j], passwords[i]);
-                if (key == null || encs[j].Error != 0) return;
+                curses[j] = default;
+                NewKey(ref curses[j], passwords[i]);
+                if (key == null || curses[j].Error != 0) return;
 
-                fpds[j] = ReadHeader(paths[j], ref encs[j]);
+                fpds[j] = ReadHeader(paths[j], ref curses[j]);
                 if (fpds[j].DataOffset < 0x400 || fpds[j].DataOffset % 0x400 != 0) return;
                 else if (fpds[j].ParentHash0 == 0 && fpds[j].ParentHash1 == 0 && fpds[j].ParentHash2 == 0) continue;
                 else if (fpds[j].ParentHash0 != fpds[i].Hash0 || fpds[j].ParentHash1 != fpds[i].Hash1
                       || fpds[j].ParentHash2 != fpds[i].Hash2) return;
             }
-            Differentiate(paths, encs, fpds);
+            Differentiate(paths, curses, fpds);
         }
 
         public void Differentiate(string path, byte[] key, string[] paths, byte[][] keys)
         {
-            if (this.key == null || path == null || enc.Error != 0 || paths == null || keys == null
+            if (this.key == null || path == null || curse.Error != 0 || paths == null || keys == null
                 || paths.Length < 1 || keys.Length < 1 || paths.Length != keys.Length || key == null) return;
 
             int c = paths.Length;
-            KKE[] encs = new KKE[c + 1];
+            KKC[] curses = new KKC[c + 1];
             FilePackerData[] fpds = new FilePackerData[c + 1];
 
             Array.Resize(ref paths, c + 1);
@@ -469,27 +472,27 @@ namespace KKdEmbLib
             paths[0] = path;
 
             this.key = null;
-            encs[0] = default;
-            NewKey(ref encs[0], key);
-            if (this.key == null || encs[0].Error != 0) return;
+            curses[0] = default;
+            NewKey(ref curses[0], key);
+            if (this.key == null || curses[0].Error != 0) return;
 
-            fpds[0] = ReadHeader(path, ref encs[0]);
+            fpds[0] = ReadHeader(path, ref curses[0]);
             if (fpds[0].DataOffset < 0x400 || fpds[0].DataOffset % 0x400 != 0) return;
 
             for (int i = 0, j = 1; i < c; i++, j++)
             {
                 this.key = null;
-                encs[j] = default;
-                NewKey(ref encs[j], keys[i]);
-                if (this.key == null || encs[j].Error != 0) return;
+                curses[j] = default;
+                NewKey(ref curses[j], keys[i]);
+                if (this.key == null || curses[j].Error != 0) return;
 
-                fpds[j] = ReadHeader(paths[j], ref encs[j]);
+                fpds[j] = ReadHeader(paths[j], ref curses[j]);
                 if (fpds[j].DataOffset < 0x400 || fpds[j].DataOffset % 0x400 != 0) return;
             }
-            Differentiate(paths, encs, fpds);
+            Differentiate(paths, curses, fpds);
         }
 
-        private void Differentiate(string[] paths, KKE[] encs, FilePackerData[] fpds)
+        private void Differentiate(string[] paths, KKC[] curses, FilePackerData[] fpds)
         {
             long i, j, l, k;
 
@@ -520,11 +523,11 @@ namespace KKdEmbLib
             }
 
             Console.WriteLine($"Reading \"{Path.GetFileName(paths[j])}\"");
-            Compare(ss[j], encs, fpds, (int)j, ref diff);
+            Compare(ss[j], curses, fpds, (int)j, ref diff);
             for (j = c - 2; j >= 0; j--)
             {
                 Console.WriteLine($"Reading \"{Path.GetFileName(paths[j])}\"");
-                Compare(ss[j], encs, fpds, (int)j, ref diff);
+                Compare(ss[j], curses, fpds, (int)j, ref diff);
 
                 FilePackerData fpd = default;
                 fpd.ParentHash0 = hash0;
@@ -557,8 +560,8 @@ namespace KKdEmbLib
                 hash1 = h.CalculateChecksum1(h.LongLength);
                 hash2 = h.CalculateChecksum2(h.LongLength);
 
-                encs[j].Reset(fpd.IV0, fpd.IV1, fpd.IV2, fpd.IV3);
-                encs[j].Encrypt(h, h, 0x10, 0x10);
+                curses[j].Reset(fpd.IV0, fpd.IV1, fpd.IV2, fpd.IV3);
+                curses[j].Curse(h, h, 0x10, 0x10);
 
                 Stream s = File.OpenWriter(getPath(paths[j]), true);
                 s.W(h);
@@ -605,7 +608,7 @@ namespace KKdEmbLib
                 ss[i].Dispose();
         }
 
-        private void Compare(Stream s, KKE[] encs, FilePackerData[] fpds, int index, ref Diff diff)
+        private void Compare(Stream s, KKC[] curses, FilePackerData[] fpds, int index, ref Diff diff)
         {
             int i0, i1, i2, i3;
             bool b0, b1, b2, b3;
@@ -678,7 +681,7 @@ namespace KKdEmbLib
                 b2 = diff.FileReplace.ContainsKey(fd.Name, out i2);
                 b3 = diff.FileNoEdit .ContainsKey(fd.Name, out i3);
 
-                if (fd.Hash == 0) { fd.Hash = GetHash(s, fd, encs[index]); fd.OldDataOffset = fd.DataOffset; }
+                if (fd.Hash == 0) { fd.Hash = GetHash(s, fd, curses[index]); fd.OldDataOffset = fd.DataOffset; }
 
                 fd.Attributes &= 0xFFFFFFF;
                 if (b0 || b1 || b2 || b3)
@@ -742,7 +745,7 @@ namespace KKdEmbLib
             diff.FileReplace.Capacity = diff.FileReplace.Count;
         }
 
-        private ulong GetHash(Stream s, FileData fd, KKE enc)
+        private ulong GetHash(Stream s, FileData fd, KKC curse)
         {
             Console.WriteLine($"Hashing \"{fd.Name}\"");
             long j, l;
@@ -751,11 +754,11 @@ namespace KKdEmbLib
 
             byte[] buf = new byte[dA];
             ulong hash = 0xCBF29CE484222325;
-            enc.Reset(fd.IV);
+            curse.Reset(fd.IV);
             for (j = 0; j < l; j++)
             {
                 s.RBy(dA, buf);
-                enc.Decrypt(buf, buf);
+                curse.Decurse(buf, buf);
                 hash = buf.CalculateChecksum0(dA, hash);
             }
 
@@ -763,7 +766,7 @@ namespace KKdEmbLib
             if (l > 0)
             {
                 s.RBy(l.A(hA), buf);
-                enc.Decrypt(buf, buf);
+                curse.Decurse(buf, buf);
                 hash = buf.CalculateChecksum0(l, hash);
             }
             return hash;
@@ -787,11 +790,23 @@ namespace KKdEmbLib
             if (key == null) return;
 
             key = null;
-            KKE enc = default;
-            NewKey(ref enc, password);
-            if (key == null || enc.Error != 0) return;
+            KKC curse = default;
+            NewKey(ref curse, password);
+            if (key == null || curse.Error != 0) return;
 
-            Repack(path, enc);
+            Repack(path, path, curse);
+        }
+
+        public void Repack(string path, string path2, string password)
+        {
+            if (key == null) return;
+
+            key = null;
+            KKC curse = default;
+            NewKey(ref curse, password);
+            if (key == null || curse.Error != 0) return;
+
+            Repack(path, path2, curse);
         }
 
         public void Repack(string path, byte[] key)
@@ -799,19 +814,32 @@ namespace KKdEmbLib
             if (key == null) return;
 
             this.key = null;
-            KKE enc = default;
-            NewKey(ref enc, key);
-            if (this.key == null || this.enc.Error != 0) return;
+            KKC curse = default;
+            NewKey(ref curse, key);
+            if (this.key == null || this.curse.Error != 0) return;
 
-            Repack(path, enc);
+            Repack(path, path, curse);
         }
 
-        private void Repack(string path, KKE enc2)
+        public void Repack(string path, string path2, byte[] key)
         {
-            if (key == null || path == null || enc.Error != 0 || enc2.Error != 0) return;
+            if (key == null) return;
 
+            this.key = null;
+            KKC curse = default;
+            NewKey(ref curse, key);
+            if (this.key == null || this.curse.Error != 0) return;
+
+            Repack(path, path2, curse);
+        }
+
+        private void Repack(string path, string path2, KKC curse2)
+        {
+            if (key == null || path == null || curse.Error != 0 || curse2.Error != 0) return;
+
+            DataMode dm;
             long i; byte[] h; Stream s;
-            FilePackerData fpd = ReadHeader(path, ref enc);
+            FilePackerData fpd = ReadHeader(path, ref curse);
             if (fpd.DataOffset < 0x400 || fpd.DataOffset % 0x400 != 0) return;
 
             _state = (uint)(fpd.FilesCount + fpd.DirsCount + fpd.NameOffset);
@@ -831,11 +859,11 @@ namespace KKdEmbLib
 
             h = WriteHeader(ref fpd);
 
-            enc2.Reset(fpd.IV0, fpd.IV1, fpd.IV2, fpd.IV3);
-            enc2.Encrypt(h, h, 0x10, 0x10);
+            curse2.Reset(fpd.IV0, fpd.IV1, fpd.IV2, fpd.IV3);
+            curse2.Curse(h, h, 0x10, 0x10);
 
             string temp = Path.GetTempFileName();
-            Stream s1 = File.OpenWriter(temp);
+            Stream s1 = File.OpenWriter(path == path2 ? temp : path2);
             s1.W(h);
             s1.F();
             s = File.OpenReader(path);
@@ -846,18 +874,23 @@ namespace KKdEmbLib
             for (i = 0; i < fpd.FilesCount; i++)
             {
                 ref FileData fd = ref fpd.FilesData[i];
+                dm = (DataMode)(fd.Attributes >> 28);
+
+                if (dm != DataMode.Store && dm != DataMode.Replace)
+                    continue;
+
                 Console.WriteLine($"Packing \"{fd.Name}\"");
                 s.PI64 = of[i];
                 s1.PI64 = fd.DataOffset;
                 l = fd.DataLength / dA;
 
-                enc.Reset(iv[i]);
-                enc2.Reset(fd.IV);
+                curse.Reset(iv[i]);
+                curse2.Reset(fd.IV);
                 for (j = 0; j < l; j++)
                 {
                     s.RBy(dA, buf);
-                    enc.Decrypt(buf, buf);
-                    enc2.Encrypt(buf, buf);
+                    curse.Decurse(buf, buf);
+                    curse2.Curse(buf, buf);
                     s1.W(buf, dA);
                 }
 
@@ -866,17 +899,21 @@ namespace KKdEmbLib
 
                 l = l.A(hA);
                 s.RBy(l, buf);
-                enc.Decrypt(buf, buf);
-                enc2.Encrypt(buf, buf);
+                curse.Decurse(buf, buf);
+                curse2.Curse(buf, buf);
                 s1.W(buf, (int)l);
             }
             s.C();
             s1.C();
-            File.Delete(path);
-            File.Move(temp, path);
+
+            if (path == path2)
+            {
+                if (File.Exists(path2)) File.Delete(path2);
+                File.Move(temp, path2);
+            }
 
             DirData r = fpd.RootDir;
-            System.IO.FileInfo ri = new System.IO.FileInfo(path)
+            System.IO.FileInfo ri = new System.IO.FileInfo(path2)
             {
                   CreationTimeUtc = new DateTime(r.LastWriteTime),
                  LastWriteTimeUtc = new DateTime(r.LastWriteTime),
@@ -884,9 +921,9 @@ namespace KKdEmbLib
             };
         }
 
-        private FilePackerData ReadHeader(string path, ref KKE enc)
+        private FilePackerData ReadHeader(string path, ref KKC curse)
         {
-            if (key == null || path == null || enc.Error != 0 || !File.Exists(path)) return default;
+            if (key == null || path == null || curse.Error != 0 || !File.Exists(path)) return default;
 
             long i;
             Stream s = File.OpenReader(path);
@@ -898,8 +935,8 @@ namespace KKdEmbLib
             byte[] h = s.RBy(0x30);
             s.C();
 
-            enc.Reset(iv0, iv1, iv2, iv3);
-            enc.Decrypt(h, h, 0x10, 0x10);
+            curse.Reset(iv0, iv1, iv2, iv3);
+            curse.Decurse(h, h, 0x10, 0x10);
 
             bool h0 = true, h1 = false;
             for (i = 0; i < 0x10; i++)
@@ -921,8 +958,8 @@ namespace KKdEmbLib
             h = s.RBy(dataOffset);
             s.C();
 
-            enc.Reset(iv0, iv1, iv2, iv3);
-            enc.Decrypt(h, h, 0x10, 0x10);
+            curse.Reset(iv0, iv1, iv2, iv3);
+            curse.Decurse(h, h, 0x10, 0x10);
 
             return ReadHeader(h, iv0, iv1, iv2, iv3, h1);
         }
@@ -1096,7 +1133,7 @@ namespace KKdEmbLib
         }
 
         public void Dispose()
-        { enc.Dispose(); key = null; }
+        { curse.Dispose(); key = null; }
 
         public struct FilePackerData
         {
