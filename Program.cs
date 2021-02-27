@@ -205,7 +205,8 @@ namespace FolderDumper
                     { Console.WriteLine($"File \"{k}\" has invalid length\nShould be 64 bytes"); return true; }
                     fp = new FilePacker(key);
                 }
-                else { Console.WriteLine($"File \"{k}\" doesn't exist"); return true; }
+                else
+                    fp = new FilePacker(k);
                 return false;
             }
 
