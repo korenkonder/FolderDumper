@@ -347,7 +347,7 @@ namespace KKdEmbLib
                 dm = (DataMode)(fd.Attributes >> 28);
 
                 if (dm == DataMode.Store || dm == DataMode.Replace)
-                    using (s1 = File.OpenWriter(pre_files[i]))
+                    using (s1 = File.OpenWriter(pre_files[i], true))
                     {
                         Console.WriteLine($"Unpacking \"{fd.Name}\"");
                         s.PI64 = fd.DataOffset;
@@ -451,9 +451,7 @@ namespace KKdEmbLib
 
                 fpds[j] = ReadHeader(paths[j], ref curses[j]);
                 if (fpds[j].DataOffset < 0x400 || fpds[j].DataOffset % 0x400 != 0) return;
-                else if (fpds[j].ParentHash0 == 0 && fpds[j].ParentHash1 == 0 && fpds[j].ParentHash2 == 0) continue;
-                else if (fpds[j].ParentHash0 != fpds[i].Hash0 || fpds[j].ParentHash1 != fpds[i].Hash1
-                      || fpds[j].ParentHash2 != fpds[i].Hash2) return;
+                else if (fpds[i].ParentHash0 != 0 || fpds[i].ParentHash1 != 0 || fpds[i].ParentHash2 != 0) return;
             }
             Differentiate(paths, curses, fpds);
         }
@@ -488,6 +486,7 @@ namespace KKdEmbLib
 
                 fpds[j] = ReadHeader(paths[j], ref curses[j]);
                 if (fpds[j].DataOffset < 0x400 || fpds[j].DataOffset % 0x400 != 0) return;
+                else if (fpds[i].ParentHash0 != 0 || fpds[i].ParentHash1 != 0 || fpds[i].ParentHash2 != 0) return;
             }
             Differentiate(paths, curses, fpds);
         }
@@ -863,7 +862,7 @@ namespace KKdEmbLib
             curse2.Curse(h, h, 0x10, 0x10);
 
             string temp = Path.GetTempFileName();
-            Stream s1 = File.OpenWriter(path == path2 ? temp : path2);
+            Stream s1 = File.OpenWriter(path == path2 ? temp : path2, true);
             s1.W(h);
             s1.F();
             s = File.OpenReader(path);
@@ -988,8 +987,8 @@ namespace KKdEmbLib
 
 
             fpd.RootDir = default;
-            fpd. DirsData = new DirData[fpd. DirsCount];
-            fpd.FilesData = new       FileData[fpd.FilesCount];
+            fpd. DirsData = new  DirData[fpd. DirsCount];
+            fpd.FilesData = new FileData[fpd.FilesCount];
 
             fpd.RootDir.Unused        = s.RU32();
             fpd.RootDir.Attributes    = s.RU32();

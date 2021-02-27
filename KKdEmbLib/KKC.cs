@@ -15,8 +15,8 @@ namespace KKdEmbLib
 
         private uint[] k;
 
-        private uint a , b , e , f , p;
-        private uint a0, b0, c0, c1, c2, c3, e0, f0, o0, o1, o2, o3;
+        private uint     e , f , p;
+        private uint a0, e0, f0, o0, o1, o2, o3;
 
         private uint _state;
         private uint seed { get => _state; set => _state = value == 0 ? 1 : value; }
@@ -33,8 +33,8 @@ namespace KKdEmbLib
 
         public KKC(byte[] key, KKCKeyMode mode = KKCKeyMode.Past)
         {
-            a  = b  = e  = f  = p  = 0;
-            a0 = b0 = c0 = c1 = c2 = c3 = e0 = f0 = o0 = o1 = o2 = o3 = 0;
+                 e  = f  = p  = 0;
+            a0 = e0 = f0 = o0 = o1 = o2 = o3 = 0;
             _state = 1;
             k = null;
             this.mode = 0;
@@ -66,8 +66,8 @@ namespace KKdEmbLib
 
         public KKC(KKCKeyType type = KKCKeyType.KKC256, KKCKeyMode mode = KKCKeyMode.Past)
         {
-            a  = b  = e  = f  = p  = 0;
-            a0 = b0 = c0 = c1 = c2 = c3 = e0 = f0 = o0 = o1 = o2 = o3 = 0;
+                 e  = f  = p  = 0;
+            a0 = e0 = f0 = o0 = o1 = o2 = o3 = 0;
             _state = 1;
             k = null;
             this.mode = 0;
@@ -95,8 +95,8 @@ namespace KKdEmbLib
 
         public KKC(uint seed, KKCKeyType type = KKCKeyType.KKC256, KKCKeyMode mode = KKCKeyMode.Past)
         {
-            a  = b  = e  = f  = p  = 0;
-            a0 = b0 = c0 = c1 = c2 = c3 = e0 = f0 = o0 = o1 = o2 = o3 = 0;
+                 e  = f  = p  = 0;
+            a0 = e0 = f0 = o0 = o1 = o2 = o3 = 0;
             _state = seed;
             k = null;
             this.mode = 0;
@@ -118,14 +118,14 @@ namespace KKdEmbLib
             }
 
             error = KKCError.None;
-            key = KKCKey.GetNewKey(mode, type);
+            key = KKCKey.GetNewKey(seed, mode, type);
             this.mode = key.Mode;
         }
 
         public KKC(KKCKey key)
         {
-            a  = b  = e  = f  = p  = 0;
-            a0 = b0 = c0 = c1 = c2 = c3 = e0 = f0 = o0 = o1 = o2 = o3 = 0;
+                 e  = f  = p  = 0;
+            a0 = e0 = f0 = o0 = o1 = o2 = o3 = 0;
             _state = 1;
             k = null;
             error = KKCError.None;
@@ -148,25 +148,27 @@ namespace KKdEmbLib
             byte[] arr = new byte[kl + 3];
             Array.Copy(key.Data, 0, arr, 0, kl);
 
-            uint i;
-            k = new uint[kl];
+            uint a, b, i, n, q;
+            n = kl / 2;
+            if (k == null || k.Length != kl)
+                k = new uint[kl];
             while (true)
             {
-                for (i = 0, b = kl / 2, a = 0, b0 = 0; i < b; i++)
-                { a ^= k[i] = GetU32(arr, i * 2); b0 |= k[i]; }
-                k[kl / 2 - 1] |= b = GetU32(arr, 0) << 16; a ^= b; b0 |= b;
+                for (i = 0, a = 0, q = 0; i < n; i++)
+                { b = GetU32(arr, i * 2); k[i] = b; a ^= b; q |= b; }
+                b = GetU32(arr, 0) << 16; k[n - 1] |= b; a ^= b; q |= b;
 
-                if (b0 != 0)
+                if (q != 0)
                 {
-                    for (i = 0, b = kl / 2; i < b; i++)
-                    { a ^= k[b + i] = GetU32(arr, i * 2 + 1); b0 |= k[i]; }
-                    k[kl - 2] |= b = GetU32(arr, 0) << 24; a ^= b; b0 |= b;
-                    k[kl - 1] |= b = GetU32(arr, 0) <<  8; a ^= b; b0 |= b;
+                    for (i = 0; i < n; i++)
+                    { b = GetU32(arr, i * 2 + 1); k[n + i] = b; a ^= b; q |= b; }
+                    b = GetU32(arr, 0) << 24; k[kl - 2] |= b; a ^= b; q |= b;
+                    b = GetU32(arr, 0) <<  8; k[kl - 1] |= b; a ^= b; q |= b;
 
                     if (a != 0) break;
                 }
 
-                seed =         a ^ b0; NextBytes(arr);
+                seed =         a ^ q ; NextBytes(arr);
                 seed = GetU32(arr, 0); NextBytes(arr);
             }
             arr = null;
@@ -218,7 +220,7 @@ namespace KKdEmbLib
             return data;
         }
 
-        public byte[] Decrypt(byte[] arr)
+        public byte[] Decurse(byte[] arr)
         {
             bool @return = true;
                  if (k              == null) error = KKCError.UninitializedTable;
@@ -278,6 +280,7 @@ namespace KKdEmbLib
             uint kl = key.Length;
             long len = l > 0 ? l : (srcl - srco) / 4;
 
+            uint b, c0, c1, c2, c3;
             fixed (uint* m = k)
             fixed (byte* srcPtr = src)
             fixed (byte* dstPtr = dst)
@@ -359,6 +362,7 @@ namespace KKdEmbLib
             uint kl = key.Length;
             long len = l > 0 ? l : (srcl - srco) / 4;
 
+            uint b, c0, c1, c2, c3;
             fixed (uint* m = k)
             fixed (byte* srcPtr = src)
             fixed (byte* dstPtr = dst)
@@ -402,7 +406,7 @@ namespace KKdEmbLib
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime
             .CompilerServices.MethodImplOptions.AggressiveInlining)]
         private static byte XorU32(uint val) =>
-                (byte)(val ^ (val >> 8) ^ (val >> 16) ^ (val >> 24));
+                (byte)((byte)val ^ (byte)(val >> 8) ^ (byte)(val >> 16) ^ (byte)(val >> 24));
 
         private static uint GetU32(byte[] arr, uint offset = 0) =>
                      arr[offset    ]        | ((uint)arr[offset + 1] <<  8)
